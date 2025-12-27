@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <BlazorWebAssemblyEnableCompression>false</BlazorWebAssemblyEnableCompression>
+  </PropertyGroup>
+
+  <Target Name="RemoveBlazorCompressedAssetsOnPublish"
+          AfterTargets="Publish">
+    <ItemGroup>
+      <BlazorCompressedFiles Include="$(PublishDir)wwwroot\**\*.gz" />
+      <BlazorCompressedFiles Include="$(PublishDir)wwwroot\**\*.br" />
+    </ItemGroup>
+
+    <Delete Files="@(BlazorCompressedFiles)" />
+  </Target> 
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.11" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.11" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

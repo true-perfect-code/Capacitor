@@ -1,0 +1,6 @@
+{
+  "appId": "ch.trueperfectcode.capacitor",
+  "appName": "Capacitor",
+  "webDir": "bin/Release/net9.0/browser-wasm/publish/wwwroot",
+  "bundledWebRuntime": false
+}

@@ -1,0 +1,141 @@
+﻿@page "/"
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+
+<PageTitle>pMunus - Device Dashboard</PageTitle>
+
+<div class="container mt-4">
+    <h1 class="mb-4">Capacitor Bridge</h1>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header @(deviceData?.IsNative == true ? "bg-success text-white" : "bg-primary text-white")">
+            <h5 class="mb-0">
+                <i class="bi @(deviceData?.IsNative == true ? "bi-cpu" : "bi-globe") me-2"></i>
+                @(deviceData == null ? "Initializing..." : (deviceData.IsNative ? "Native App (Capacitor)" : "Web Browser Mode"))
+            </h5>
+        </div>
+
+        <div class="card-body">
+            @if (deviceData == null)
+            {
+                <div class="d-flex align-items-center py-4">
+                    <strong>Building hardware profile...</strong>
+                    <div class="spinner-border ms-auto text-primary" role="status"></div>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 40%">Property</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Manufacturer / Model:</strong></td>
+                                <td>@deviceData.Manufacturer / @deviceData.Model</td>
+                            </tr>
+                            <tr>
+                                <td><strong>System & Version:</strong></td>
+                                <td><span class="badge bg-secondary">@deviceData.Platform</span> @deviceData.OsVersion</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Unique ID (UUID):</strong></td>
+                                <td class="text-break"><code class="small">@deviceData.Uuid</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Language:</strong></td>
+                                <td><i class="bi bi-translate me-1"></i> @deviceData.Language.ToUpper()</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Battery Level:</strong></td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress flex-grow-1" style="height: 20px;">
+                                            <div class="progress-bar @GetBatteryColor(deviceData.BatteryLevel)"
+                                                 role="progressbar"
+                                                 style="width: @(deviceData.BatteryLevel * 100)%">
+                                                @(Math.Round(deviceData.BatteryLevel * 100))%
+                                            </div>
+                                        </div>
+                                        <span class="ms-2">
+                                            @if (deviceData.IsCharging)
+                                            {
+                                                <i class="bi bi-lightning-charge-fill text-warning" title="Charging"></i>
+                                            }
+                                        </span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+        <div class="card-footer bg-white border-top-0 pb-3">
+            <button class="btn btn-outline-dark w-100 shadow-sm" @onclick="UpdateStatus">
+                <i class="bi bi-arrow-clockwise me-1"></i> Update Status
+            </button>
+        </div>
+    </div>
+
+    <div class="alert @(deviceData?.IsNative == true ? "alert-success" : "alert-info") mt-4 border-0 shadow-sm">
+        <i class="bi bi-info-circle-fill me-2"></i>
+        <small>
+            <strong>Note:</strong>
+            @(deviceData?.IsNative == true
+                        ? "The app is communicating directly with the Android/iOS hardware layer."
+                        : "Simulation running in web browser. IDs and hardware info are fallback values.")
+        </small>
+    </div>
+</div>
+
+@code {
+    public class DeviceResult
+    {
+        public string Model { get; set; }
+        public string Platform { get; set; }
+        public string OsVersion { get; set; }
+        public string Manufacturer { get; set; }
+        public float BatteryLevel { get; set; }
+        public bool IsCharging { get; set; }
+        public string Uuid { get; set; }
+        public string Language { get; set; }
+        public bool IsNative { get; set; }
+    }
+
+    private DeviceResult deviceData;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Small delay to ensure JS-Bridge is ready in some WebView environments
+            await Task.Delay(500);
+            await UpdateStatus();
+        }
+    }
+
+    private async Task UpdateStatus()
+    {
+        try
+        {
+            deviceData = await JS.InvokeAsync<DeviceResult>("capacitorInterop.getDeviceInfo");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"JS Interop Error: {ex.Message}");
+        }
+    }
+
+    private string GetBatteryColor(float level)
+    {
+        if (level < 0.2f) return "bg-danger";
+        if (level < 0.5f) return "bg-warning";
+        return "bg-success";
+    }
+}
